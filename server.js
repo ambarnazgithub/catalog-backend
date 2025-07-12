@@ -1,4 +1,3 @@
-
 // server.js
 import express from "express";
 import cors from "cors";
@@ -12,22 +11,42 @@ const PORT = process.env.PORT || 8080;
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.FRONT_END_URL || "http://localhost:5176"
+  origin: process.env.FRONT_END_URL || "http://localhost:5176",
+  credentials: true
 }));
 
 app.use(express.json());
 
-// Root route
+// Use skincare routes BEFORE the root route
+app.use(skincareRouter);
+
+// Root route - put this AFTER the API routes
 app.get("/", (req, res) => {
   res.json({ 
     message: "Welcome to the Skincare API",
-    status: "working"
+    status: "working",
+    endpoints: {
+      test: "/api/test",
+      products: "/api/skincare-products"
+    }
   });
 });
 
-// Use skincare routes
-app.use(skincareRouter);
-
-app.listen(PORT, () => {
-  console.log(`✅ Server is running on http://localhost:${PORT}`);
+// 404 handler for unmatched routes
+app.use((req, res) => {
+  res.status(404).json({
+    error: "Route not found",
+    path: req.path,
+    method: req.method
+  });
 });
+
+// For Vercel, we need to export the app as well
+export default app;
+
+// Only start the server if we're not in Vercel
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`✅ Server is running on http://localhost:${PORT}`);
+  });
+}
